@@ -3,409 +3,843 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mermaid Live Editor - Tech Style</title>
-    
-    <!-- 外部资源 -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
-    
-    <!-- 自定义样式 -->
+    <title>Mermaid 代码预览器</title>
+    <link href="https://cdn.staticfile.org/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.staticfile.org/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.min.js"></script>
     <style>
         * {
-            box-sizing: border-box;
+            font-family: Tahoma, Arial, Roboto, "Droid Sans", "Helvetica Neue", "Droid Sans Fallback", "Heiti SC", "Hiragino Sans GB", Simsun, sans-serif;
         }
         
         body {
-            font-family: 'Courier New', monospace;
-            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
-            color: #00ff41;
-            overflow: hidden;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
         }
         
-        /* 代码输入框样式 */
-        .code-input {
-            background: rgba(0, 0, 0, 0.8);
-            border: 1px solid #00ff41;
-            font-family: 'Courier New', monospace;
-            resize: none;
-            transition: all 0.3s ease;
+        .tech-border {
+            border: 2px solid transparent;
+            background: linear-gradient(45deg, #00d4ff, #0099cc, #0066ff) border-box;
+            border-radius: 8px;
+            position: relative;
         }
         
-        .code-input:focus {
+        .tech-border::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #00d4ff, #0099cc, #0066ff);
+            border-radius: 8px;
+            z-index: -1;
+            animation: borderGlow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes borderGlow {
+            0% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .code-editor {
+            background: rgba(15, 15, 35, 0.9);
+            border: 1px solid #00d4ff;
+            color: #00ff88;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .code-editor:focus {
             outline: none;
-            box-shadow: 0 0 20px rgba(0, 255, 65, 0.5);
-            border-color: #00ff41;
+            border-color: #00ff88;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
         }
         
-        /* 滚动条样式 */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #0a0a0a;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: #00ff41;
-            border-radius: 4px;
-        }
-        
-        /* 按钮样式 */
-        .tech-button {
-            background: rgba(0, 255, 65, 0.1);
-            border: 1px solid #00ff41;
-            color: #00ff41;
-            transition: all 0.3s ease;
+        .preview-area {
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid #00d4ff;
+            border-radius: 8px;
             position: relative;
             overflow: hidden;
         }
         
-        .tech-button:hover {
-            background: rgba(0, 255, 65, 0.2);
-            box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
+        .control-btn {
+            background: rgba(15, 15, 35, 0.9);
+            border: 1px solid #00d4ff;
+            color: #00d4ff;
+            transition: all 0.3s ease;
+        }
+        
+        .control-btn:hover {
+            background: #00d4ff;
+            color: #0f0f23;
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
             transform: translateY(-2px);
         }
         
-        .tech-button:active {
-            transform: translateY(0);
+        /* 主题滑动器样式 */
+        .theme-slider-container {
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 10px 0;
+            border-radius: 8px;
+            background: rgba(15, 15, 35, 0.3);
         }
         
-        /* 主题选择器样式 */
-        .theme-selector {
-            background: rgba(0, 0, 0, 0.6);
-            border: 1px solid #00ff41;
-            color: #00ff41;
+        .theme-slider {
+            display: flex;
+            gap: 15px;
+            padding: 10px;
+            min-width: max-content;
+        }
+        
+        .theme-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             cursor: pointer;
-        }
-        
-        .theme-selector option {
-            background: #0a0a0a;
-            color: #00ff41;
-        }
-        
-        /* 错误提示样式 */
-        .error-alert {
-            background: rgba(255, 0, 0, 0.1);
-            border: 1px solid #ff0000;
-            color: #ff0000;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 0.7; }
-            50% { opacity: 1; }
-            100% { opacity: 0.7; }
-        }
-        
-        /* 预览区域样式 */
-        .preview-container {
-            background: rgba(0, 0, 0, 0.5);
-            border: 1px solid #00ff41;
+            padding: 12px 8px;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            min-width: 80px;
+            background: rgba(15, 15, 35, 0.5);
             position: relative;
-            overflow: hidden;
         }
         
-        .preview-image {
-            max-width: 100%;
-            max-height: 100%;
-            transition: transform 0.3s ease;
+        .theme-item:hover {
+            border-color: #00d4ff;
+            background: rgba(15, 15, 35, 0.8);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 212, 255, 0.2);
         }
         
-        /* 控制按钮容器 */
-        .control-buttons {
+        .theme-item.active {
+            border-color: #00ff88;
+            background: rgba(0, 255, 136, 0.15);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+        }
+        
+        .theme-item.active::before {
+            content: '';
             position: absolute;
-            bottom: 10px;
-            right: 10px;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #00ff88, #00d4ff);
+            border-radius: 8px;
+            z-index: -1;
+            opacity: 0.3;
+        }
+        
+        .theme-preview {
+            width: 45px;
+            height: 32px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .theme-name {
+            font-size: 11px;
+            color: #ffffff;
+            text-align: center;
+            white-space: nowrap;
+            font-weight: 500;
+        }
+        
+        .theme-item.active .theme-name {
+            color: #00ff88;
+            font-weight: 600;
+        }
+        
+        /* 各主题预览颜色 */
+        .theme-default {
+            background: linear-gradient(45deg, #ffffff, #f0f0f0);
+        }
+        
+        .theme-neutral {
+            background: linear-gradient(45deg, #f9f9f9, #e0e0e0);
+        }
+        
+        .theme-dark {
+            background: linear-gradient(45deg, #2b2b2b, #1a1a1a);
+        }
+        
+        .theme-forest {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+        }
+        
+        .theme-base {
+            background: linear-gradient(45deg, #ffffff, #cccccc);
+        }
+        
+        .theme-business {
+            background: linear-gradient(45deg, #ecf0f1, #34495e);
+        }
+        
+        .theme-tech {
+            background: linear-gradient(45deg, #00d4ff, #0066ff);
+        }
+        
+        .theme-nature {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+        }
+        
+        .theme-vintage {
+            background: linear-gradient(45deg, #d4a574, #8b4513);
+        }
+        
+        .theme-minimal {
+            background: linear-gradient(45deg, #ffffff, #cccccc);
+        }
+        
+        .theme-night {
+            background: linear-gradient(45deg, #2c3e50, #34495e);
+        }
+        
+        /* 滚动条样式 */
+        .theme-slider-container::-webkit-scrollbar {
+            height: 6px;
+        }
+        
+        .theme-slider-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+        
+        .theme-slider-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(90deg, #00d4ff, #00ff88);
+            border-radius: 3px;
+        }
+        
+        .theme-slider-container::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(90deg, #00ff88, #00d4ff);
+        }
+        
+        .error-message {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid #ff4444;
+            color: #ff6666;
+            border-radius: 4px;
+        }
+        
+        .success-message {
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #44ff44;
+            color: #66ff66;
+            border-radius: 4px;
+        }
+        
+        .mermaid-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100%;
+            padding: 20px;
+        }
+        
+        .zoom-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
             display: flex;
             gap: 10px;
+            z-index: 10;
         }
         
-        /* 网格背景效果 */
-        .grid-bg {
-            background-image: 
-                linear-gradient(rgba(0, 255, 65, 0.1) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 255, 65, 0.1) 1px, transparent 1px);
-            background-size: 20px 20px;
+        .export-controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 10;
         }
         
-        /* 加载动画 */
-        .loading {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(0, 255, 65, 0.3);
-            border-radius: 50%;
-            border-top-color: #00ff41;
-            animation: spin 1s ease-in-out infinite;
+        .tech-title {
+            background: linear-gradient(45deg, #00d4ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
         }
         
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+            }
+            
+            .left-panel, .right-panel {
+                width: 100%;
+                height: 50vh;
+            }
+        }
+        
+        /* 新增平板设备响应式 */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .left-panel {
+                width: 40%;
+            }
+            
+            .right-panel {
+                width: 60%;
+            }
+        }
+        
+        /* 新增小平板设备响应式 */
+        @media (max-width: 640px) {
+            .main-container {
+                flex-direction: column;
+                gap: 4px;
+            }
+            
+            .left-panel, .right-panel {
+                width: 100%;
+                height: 45vh;
+            }
+            
+            .container {
+                padding: 8px;
+            }
+            
+            header h1 {
+                font-size: 1.5rem;
+            }
         }
     </style>
 </head>
-<body class="h-screen grid-bg">
-    <div class="container mx-auto h-full p-4">
-        <h1 class="text-3xl font-bold text-center mb-6 text-green-400 tracking-wider">
-            <i class="fas fa-code"></i> MERMAID LIVE EDITOR
-        </h1>
+<body class="text-white">
+    <div class="container mx-auto px-4 py-6">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold tech-title mb-2">
+                <i class="fas fa-code mr-3"></i>
+                Mermaid 代码预览器
+            </h1>
+            <p class="text-gray-300">实时预览 • 多主题支持 • 图片导出</p>
+        </header>
         
-        <div class="flex flex-col lg:flex-row gap-6 h-full max-h-[calc(100vh-120px)]">
-            <!-- 左侧代码输入区 -->
-            <div class="lg:w-1/2 flex flex-col">
-                <div class="flex-1 flex flex-col">
-                    <label class="text-green-400 mb-2 font-semibold">
-                        <i class="fas fa-terminal"></i> 输入 Mermaid 代码
+        <!-- Main Content -->
+        <div class="main-container flex gap-6 h-screen max-h-screen">
+            <!-- Left Panel -->
+            <div class="left-panel w-1/3 flex flex-col">
+                <!-- Code Editor -->
+                <div class="flex-1 mb-4">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                        <i class="fas fa-edit mr-2"></i>Mermaid 代码
                     </label>
                     <textarea 
-                        id="codeInput" 
-                        class="code-input flex-1 p-4 rounded text-green-400 text-sm"
-                        placeholder="请输入您的 Mermaid 代码..."
-                        spellcheck="false"
+                        id="codeEditor" 
+                        class="code-editor w-full h-full resize-none p-4 rounded-lg"
+                        placeholder="请输入 Mermaid 代码...\n\n示例：\ngraph TD\n    A[开始] --> B{判断条件}\n    B -->|是| C[执行操作]\n    B -->|否| D[结束]\n    C --> D"
                     ></textarea>
-                    
-                    <div id="errorAlert" class="error-alert p-3 rounded mt-2 hidden">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <span id="errorMessage"></span>
+                </div>
+                
+                <!-- Theme Selector -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                        <i class="fas fa-palette mr-2"></i>主题选择
+                    </label>
+                    <div class="theme-slider-container">
+                        <div class="theme-slider" id="themeSlider">
+                            <div class="theme-item active" data-theme="default">
+                                <div class="theme-preview theme-default"></div>
+                                <span class="theme-name">默认主题</span>
+                            </div>
+                            <div class="theme-item" data-theme="neutral">
+                                <div class="theme-preview theme-neutral"></div>
+                                <span class="theme-name">中性主题</span>
+                            </div>
+                            <div class="theme-item" data-theme="dark">
+                                <div class="theme-preview theme-dark"></div>
+                                <span class="theme-name">深色主题</span>
+                            </div>
+                            <div class="theme-item" data-theme="forest">
+                                <div class="theme-preview theme-forest"></div>
+                                <span class="theme-name">森林主题</span>
+                            </div>
+                            <div class="theme-item" data-theme="base">
+                                <div class="theme-preview theme-base"></div>
+                                <span class="theme-name">基础主题</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="mt-4">
-                    <label class="text-green-400 mb-2 font-semibold block">
-                        <i class="fas fa-palette"></i> 选择主题
-                    </label>
-                    <select id="themeSelector" class="theme-selector w-full p-2 rounded">
-                        <option value="default">Default</option>
-                        <option value="forest">Forest</option>
-                        <option value="dark">Dark</option>
-                        <option value="neutral">Neutral</option>
-                    </select>
-                </div>
+                <!-- Error/Success Message -->
+                <div id="messageArea" class="hidden p-3 mb-4"></div>
             </div>
             
-            <!-- 右侧预览区 -->
-            <div class="lg:w-1/2 flex flex-col">
-                <label class="text-green-400 mb-2 font-semibold">
-                    <i class="fas fa-eye"></i> 实时预览
-                </label>
-                <div class="preview-container flex-1 rounded relative">
-                    <div id="previewArea" class="w-full h-full flex items-center justify-center">
-                        <div class="text-center text-gray-500">
-                            <i class="fas fa-image text-4xl mb-2"></i>
-                            <p>等待输入代码...</p>
-                        </div>
+            <!-- Right Panel -->
+            <div class="right-panel w-2/3 relative">
+                <div class="preview-area h-full relative overflow-auto" id="previewContainer">
+                    <!-- Export Controls -->
+                    <div class="export-controls">
+                        <button id="exportPNG" class="control-btn px-3 py-2 rounded-lg" title="导出 PNG">
+                            <i class="fas fa-download mr-1"></i>PNG
+                        </button>
+                        <button id="exportSVG" class="control-btn px-3 py-2 rounded-lg" title="导出 SVG">
+                            <i class="fas fa-download mr-1"></i>SVG
+                        </button>
+                        <button id="copyImage" class="control-btn px-3 py-2 rounded-lg" title="复制图片">
+                            <i class="fas fa-copy mr-1"></i>复制
+                        </button>
                     </div>
                     
-                    <div class="control-buttons">
-                        <button id="zoomInBtn" class="tech-button p-2 rounded" title="放大">
+                    <!-- Zoom Controls -->
+                    <div class="zoom-controls">
+                        <button id="zoomIn" class="control-btn w-10 h-10 rounded-full" title="放大 10%">
                             <i class="fas fa-search-plus"></i>
                         </button>
-                        <button id="zoomOutBtn" class="tech-button p-2 rounded" title="缩小">
+                        <button id="zoomOut" class="control-btn w-10 h-10 rounded-full" title="缩小 10%">
                             <i class="fas fa-search-minus"></i>
                         </button>
-                        <button id="fitBtn" class="tech-button p-2 rounded" title="自适应">
+                        <button id="zoomFit" class="control-btn w-10 h-10 rounded-full" title="自适应">
                             <i class="fas fa-expand-arrows-alt"></i>
                         </button>
-                        <button id="saveBtn" class="tech-button p-2 rounded" title="保存为PNG">
-                            <i class="fas fa-download"></i>
-                        </button>
-                        <button id="copyBtn" class="tech-button p-2 rounded" title="复制SVG">
-                            <i class="fas fa-copy"></i>
-                        </button>
+                    </div>
+                    
+                    <!-- Mermaid Preview -->
+                    <div class="mermaid-container" id="mermaidContainer">
+                        <div class="text-center text-gray-500">
+                            <i class="fas fa-image text-6xl mb-4 opacity-50"></i>
+                            <p>在左侧输入 Mermaid 代码开始预览</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
+    
     <script>
-        // 初始化 Mermaid
-        mermaid.initialize({ startOnLoad: false });
+        let currentZoom = 1;
+        let currentTheme = 'default';
+        let renderCounter = 0;
         
-        let currentScale = 1;
-        let currentSvg = null;
+        // DOM Elements
+        const codeEditor = document.getElementById('codeEditor');
+        const messageArea = document.getElementById('messageArea');
+        const mermaidContainer = document.getElementById('mermaidContainer');
+        const previewContainer = document.getElementById('previewContainer');
         
-        // 获取DOM元素
-        const codeInput = document.getElementById('codeInput');
-        const themeSelector = document.getElementById('themeSelector');
-        const previewArea = document.getElementById('previewArea');
-        const errorAlert = document.getElementById('errorAlert');
-        const errorMessage = document.getElementById('errorMessage');
-        const zoomInBtn = document.getElementById('zoomInBtn');
-        const zoomOutBtn = document.getElementById('zoomOutBtn');
-        const fitBtn = document.getElementById('fitBtn');
-        const saveBtn = document.getElementById('saveBtn');
-        const copyBtn = document.getElementById('copyBtn');
+        // Control buttons
+        const zoomInBtn = document.getElementById('zoomIn');
+        const zoomOutBtn = document.getElementById('zoomOut');
+        const zoomFitBtn = document.getElementById('zoomFit');
+        const exportPNGBtn = document.getElementById('exportPNG');
+        const exportSVGBtn = document.getElementById('exportSVG');
+        const copyImageBtn = document.getElementById('copyImage');
         
-        // 主题映射
-        const themeMap = {
-            'default': 'default',
-            'forest': 'forest',
-            'dark': 'dark',
-            'neutral': 'neutral'
-        };
+        // Show message function
+        function showMessage(message, type = 'error') {
+            messageArea.className = `p-3 mb-4 ${type === 'error' ? 'error-message' : 'success-message'}`;
+            messageArea.innerHTML = `<i class="fas fa-${type === 'error' ? 'exclamation-triangle' : 'check-circle'} mr-2"></i>${message}`;
+            messageArea.classList.remove('hidden');
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    messageArea.classList.add('hidden');
+                }, 3000);
+            }
+        }
         
-        // 渲染图表
-        async function renderDiagram() {
-            const code = codeInput.value.trim();
-            if (!code) {
-                previewArea.innerHTML = `
+        // Hide message function
+        function hideMessage() {
+            messageArea.classList.add('hidden');
+        }
+        
+        // Render Mermaid diagram
+        async function renderMermaid(code) {
+            if (!code.trim()) {
+                mermaidContainer.innerHTML = `
                     <div class="text-center text-gray-500">
-                        <i class="fas fa-image text-4xl mb-2"></i>
-                        <p>等待输入代码...</p>
+                        <i class="fas fa-image text-6xl mb-4 opacity-50"></i>
+                        <p>在左侧输入 Mermaid 代码开始预览</p>
                     </div>
                 `;
+                hideMessage();
                 return;
             }
             
             try {
-                errorAlert.classList.add('hidden');
-                
-                previewArea.innerHTML = '<div class="loading"></div>';
-                
-                const theme = themeSelector.value;
-                mermaid.initialize({ 
-                    theme: themeMap[theme],
-                    securityLevel: 'loose'
+                // Update mermaid config with current theme and enhanced settings
+                mermaid.initialize({
+                    startOnLoad: false,
+                    theme: currentTheme,
+                    securityLevel: 'loose',
+                    fontFamily: '"Noto Sans SC", "Microsoft YaHei", "SimHei", sans-serif',
+                    er: {
+                        entityPadding: 15,
+                        stroke: '#333333',
+                        fill: '#ECECFF',
+                        fontSize: 12,
+                        useMaxWidth: true,
+                        labelBackground: '#ffffff'
+                    },
+                    flowchart: {
+                        useMaxWidth: true,
+                        htmlLabels: true
+                    },
+                    themeVariables: {
+                        fontFamily: '"Noto Sans SC", "Microsoft YaHei", "SimHei", sans-serif',
+                        primaryColor: '#fff',
+                        primaryTextColor: '#333',
+                        primaryBorderColor: '#333',
+                        lineColor: '#333'
+                    }
                 });
                 
-                const { svg } = await mermaid.render('mermaid-diagram', code);
-                currentSvg = svg;
+                const renderID = `mermaid-${Date.now()}-${renderCounter++}`;
                 
-                previewArea.innerHTML = `
-                    <div class="w-full h-full flex items-center justify-center overflow-auto">
-                        <div id="svgContainer" style="transform: scale(${currentScale}); transition: transform 0.3s ease;">
-                            ${svg}
+                // Validate and render
+                const { svg } = await mermaid.render(renderID, code);
+                
+                mermaidContainer.innerHTML = svg;
+                
+                // Apply zoom
+                const svgElement = mermaidContainer.querySelector('svg');
+                if (svgElement) {
+                    svgElement.style.transform = `scale(${currentZoom})`;
+                    svgElement.style.transformOrigin = 'center';
+                    svgElement.style.transition = 'transform 0.3s ease';
+                }
+                
+                hideMessage();
+                
+            } catch (error) {
+                console.error('Mermaid render error:', error);
+                
+                let errorMessage = `代码格式错误: ${error.message}`;
+                let suggestion = '';
+                
+                if (error.message.includes('Expecting') && code.includes('erDiagram')) {
+                    suggestion = '<br><br><strong>建议：</strong><br>• 实体名称请使用英文或数字<br>• 属性名称可以使用中文，但需要用引号包围<br>• 尝试将"充值面板"改为"RechargePanel"';
+                }
+                
+                showMessage(errorMessage + suggestion, 'error');
+                
+                // 移除错误图片显示，只保留空白或简单文字提示
+                mermaidContainer.innerHTML = `
+                    <div class="text-center text-gray-500">
+                        <p>代码格式错误，请检查语法</p>
+                        <div class="mt-4 text-sm text-gray-400">
+                            <p>提示：实体关系图中的实体名称建议使用英文</p>
                         </div>
                     </div>
                 `;
+            }
+        }
+        
+        // Zoom functions
+        function zoomIn() {
+            currentZoom = Math.min(currentZoom + 0.1, 3);
+            updateZoom();
+        }
+        
+        function zoomOut() {
+            currentZoom = Math.max(currentZoom - 0.1, 0.1);
+            updateZoom();
+        }
+        
+        function zoomFit() {
+            currentZoom = 1;
+            updateZoom();
+        }
+        
+        function updateZoom() {
+            const svgElement = mermaidContainer.querySelector('svg');
+            if (svgElement) {
+                svgElement.style.transform = `scale(${currentZoom})`;
+            }
+        }
+        
+        // Export functions
+        function exportPNG() {
+            const svgElement = mermaidContainer.querySelector('svg');
+            if (!svgElement) {
+                showMessage('没有可导出的图表', 'error');
+                return;
+            }
+            
+            try {
+                // 克隆SVG并添加必要的属性
+                const clonedSvg = svgElement.cloneNode(true);
                 
-                // 添加SVG样式
-                const svgElement = previewArea.querySelector('svg');
-                if (svgElement) {
-                    svgElement.style.maxWidth = '100%';
-                    svgElement.style.maxHeight = '100%';
-                    svgElement.style.height = 'auto';
+                // 确保SVG有正确的命名空间和属性
+                clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+                clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+                
+                // 获取SVG的实际尺寸
+                const svgRect = svgElement.getBoundingClientRect();
+                const svgWidth = svgRect.width || 800;
+                const svgHeight = svgRect.height || 600;
+                
+                // 设置SVG的viewBox和尺寸
+                if (!clonedSvg.getAttribute('viewBox')) {
+                    clonedSvg.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
                 }
+                clonedSvg.setAttribute('width', svgWidth);
+                clonedSvg.setAttribute('height', svgHeight);
+                
+                // 创建canvas
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // 设置canvas尺寸（添加缩放支持）
+                const scale = currentZoom;
+                canvas.width = svgWidth * scale;
+                canvas.height = svgHeight * scale;
+                
+                // 填充白色背景
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // 将SVG转换为data URL
+                const svgData = new XMLSerializer().serializeToString(clonedSvg);
+                const svgDataUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+                
+                // 创建图像并绘制到canvas
+                const img = new Image();
+                img.onload = function() {
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    // 转换为blob并下载
+                    canvas.toBlob(function(blob) {
+                        if (blob) {
+                            const link = document.createElement('a');
+                            link.download = 'mermaid-diagram.png';
+                            link.href = URL.createObjectURL(blob);
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(link.href);
+                            showMessage('PNG 图片已下载', 'success');
+                        } else {
+                            showMessage('PNG 生成失败', 'error');
+                        }
+                    }, 'image/png', 1.0);
+                };
+                
+                img.onerror = function() {
+                    showMessage('图片生成失败，请重试', 'error');
+                };
+                
+                img.src = svgDataUrl;
                 
             } catch (error) {
-                errorMessage.textContent = error.message;
-                errorAlert.classList.remove('hidden');
-                previewArea.innerHTML = `
-                    <div class="text-center text-red-500">
-                        <i class="fas fa-exclamation-circle text-4xl mb-2"></i>
-                        <p>渲染失败</p>
-                    </div>
-                `;
+                console.error('PNG导出错误:', error);
+                showMessage('PNG 导出失败: ' + error.message, 'error');
             }
         }
         
-        // 缩放功能
-        function updateZoom() {
-            const svgContainer = document.getElementById('svgContainer');
-            if (svgContainer) {
-                svgContainer.style.transform = `scale(${currentScale})`;
+        function exportSVG() {
+            const svgElement = mermaidContainer.querySelector('svg');
+            if (!svgElement) {
+                showMessage('没有可导出的图表', 'error');
+                return;
             }
-        }
-        
-        zoomInBtn.addEventListener('click', () => {
-            currentScale = Math.min(currentScale * 1.1, 3);
-            updateZoom();
-        });
-        
-        zoomOutBtn.addEventListener('click', () => {
-            currentScale = Math.max(currentScale * 0.9, 0.5);
-            updateZoom();
-        });
-        
-        fitBtn.addEventListener('click', () => {
-            currentScale = 1;
-            updateZoom();
-        });
-        
-        // 保存为PNG
-        saveBtn.addEventListener('click', async () => {
-            if (!currentSvg) return;
             
-            const svgElement = previewArea.querySelector('svg');
-            if (!svgElement) return;
+            // 克隆SVG以避免修改原始元素
+            const clonedSvg = svgElement.cloneNode(true);
             
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            const img = new Image();
+            // 确保SVG有正确的命名空间
+            if (!clonedSvg.getAttribute('xmlns')) {
+                clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+            }
             
-            const svgData = new XMLSerializer().serializeToString(svgElement);
+            const svgData = new XMLSerializer().serializeToString(clonedSvg);
             const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
             const url = URL.createObjectURL(svgBlob);
             
-            img.onload = () => {
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctx.drawImage(img, 0, 0);
-                
-                const pngUrl = canvas.toDataURL('image/png');
-                const a = document.createElement('a');
-                a.href = pngUrl;
-                a.download = 'mermaid-diagram.png';
-                a.click();
-                
-                URL.revokeObjectURL(url);
-            };
+            const link = document.createElement('a');
+            link.download = 'mermaid-diagram.svg';
+            link.href = url;
+            document.body.appendChild(link); // 添加到DOM以确保在所有浏览器中工作
+            link.click();
+            document.body.removeChild(link); // 清理
+            URL.revokeObjectURL(url);
             
-            img.src = url;
-        });
+            showMessage('SVG 图片已下载', 'success');
+        }
         
-        // 复制SVG
-        copyBtn.addEventListener('click', async () => {
-            if (!currentSvg) return;
+        async function copyImage() {
+            const svgElement = mermaidContainer.querySelector('svg');
+            if (!svgElement) {
+                showMessage('没有可复制的图表', 'error');
+                return;
+            }
             
             try {
-                await navigator.clipboard.writeText(currentSvg);
+                // 检查剪贴板API支持
+                if (!navigator.clipboard || !navigator.clipboard.write) {
+                    showMessage('浏览器不支持剪贴板功能，请手动下载', 'error');
+                    return;
+                }
                 
-                // 显示复制成功提示
-                const originalText = copyBtn.innerHTML;
-                copyBtn.innerHTML = '<i class="fas fa-check"></i>';
-                setTimeout(() => {
-                    copyBtn.innerHTML = originalText;
-                }, 1000);
+                // 克隆SVG并添加必要的属性
+                const clonedSvg = svgElement.cloneNode(true);
                 
-            } catch (err) {
-                console.error('复制失败:', err);
-            }
-        });
-        
-        // 事件监听
-        codeInput.addEventListener('input', () => {
-            clearTimeout(window.renderTimeout);
-            window.renderTimeout = setTimeout(renderDiagram, 500);
-        });
-        
-        themeSelector.addEventListener('change', renderDiagram);
-        
-        // 响应式处理
-        function handleResize() {
-            if (window.innerWidth < 1024) {
-                document.querySelector('.container').classList.add('px-2');
-            } else {
-                document.querySelector('.container').classList.remove('px-2');
+                // 确保SVG有正确的命名空间和属性
+                clonedSvg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+                clonedSvg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+                
+                // 获取SVG的实际尺寸
+                const svgRect = svgElement.getBoundingClientRect();
+                const svgWidth = svgRect.width || 800;
+                const svgHeight = svgRect.height || 600;
+                
+                // 设置SVG的viewBox和尺寸
+                if (!clonedSvg.getAttribute('viewBox')) {
+                    clonedSvg.setAttribute('viewBox', `0 0 ${svgWidth} ${svgHeight}`);
+                }
+                clonedSvg.setAttribute('width', svgWidth);
+                clonedSvg.setAttribute('height', svgHeight);
+                
+                // 创建canvas
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // 设置canvas尺寸（添加缩放支持）
+                const scale = currentZoom;
+                canvas.width = svgWidth * scale;
+                canvas.height = svgHeight * scale;
+                
+                // 填充白色背景
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // 将SVG转换为data URL
+                const svgData = new XMLSerializer().serializeToString(clonedSvg);
+                const svgDataUrl = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+                
+                // 使用Promise处理图像加载
+                const blob = await new Promise((resolve, reject) => {
+                    const img = new Image();
+                    
+                    img.onload = function() {
+                        try {
+                            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                            canvas.toBlob(resolve, 'image/png', 1.0);
+                        } catch (error) {
+                            reject(error);
+                        }
+                    };
+                    
+                    img.onerror = function() {
+                        reject(new Error('图像加载失败'));
+                    };
+                    
+                    img.src = svgDataUrl;
+                });
+                
+                if (!blob) {
+                    throw new Error('无法生成图片');
+                }
+                
+                // 复制到剪贴板
+                await navigator.clipboard.write([
+                    new ClipboardItem({ 'image/png': blob })
+                ]);
+                
+                showMessage('图片已复制到剪贴板', 'success');
+                
+            } catch (error) {
+                console.error('复制失败:', error);
+                let errorMsg = '复制失败';
+                if (error.name === 'NotAllowedError') {
+                    errorMsg = '复制被拒绝，请确保页面有焦点并允许剪贴板访问';
+                } else if (error.message) {
+                    errorMsg = '复制失败: ' + error.message;
+                }
+                showMessage(errorMsg + '，请手动下载图片', 'error');
             }
         }
         
-        window.addEventListener('resize', handleResize);
-        handleResize();
+        // Event listeners
+        codeEditor.addEventListener('input', function() {
+            const code = this.value;
+            renderMermaid(code);
+        });
         
-        // 初始示例
-        codeInput.value = `graph TD
-    A[Christmas] -->|Get money| B(Go shopping)
-    B --> C{Let me think}
-    C -->|One| D[Laptop]
-    C -->|Two| E[iPhone]
-    C -->|Three| F[fa:fa-car Car]`;
+        // 主题选择器事件监听
+        document.getElementById('themeSlider').addEventListener('click', function(e) {
+            const themeItem = e.target.closest('.theme-item');
+            if (themeItem) {
+                // 移除所有active类
+                document.querySelectorAll('.theme-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                
+                // 添加active类到当前选中项
+                themeItem.classList.add('active');
+                
+                // 更新主题
+                currentTheme = themeItem.dataset.theme;
+                const code = codeEditor.value;
+                if (code.trim()) {
+                    renderMermaid(code);
+                }
+            }
+        });
         
-        renderDiagram();
+        // Control button events
+        zoomInBtn.addEventListener('click', zoomIn);
+        zoomOutBtn.addEventListener('click', zoomOut);
+        zoomFitBtn.addEventListener('click', zoomFit);
+        exportPNGBtn.addEventListener('click', exportPNG);
+        exportSVGBtn.addEventListener('click', exportSVG);
+        copyImageBtn.addEventListener('click', copyImage);
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case '=':
+                    case '+':
+                        e.preventDefault();
+                        zoomIn();
+                        break;
+                    case '-':
+                        e.preventDefault();
+                        zoomOut();
+                        break;
+                    case '0':
+                        e.preventDefault();
+                        zoomFit();
+                        break;
+                }
+            }
+        });
+        
+        // Initialize with example code
+        const exampleCode = `graph TD
+    A[开始] --> B{判断条件}
+    B -->|是| C[执行操作]
+    B -->|否| D[结束]
+    C --> D
+    
+    style A fill:#00d4ff,stroke:#0099cc,color:#fff
+    style C fill:#00ff88,stroke:#00cc66,color:#000
+    style D fill:#ff6b6b,stroke:#ff5252,color:#fff`;
+        
+        // 初始化：设置默认主题并渲染示例代码
+        document.addEventListener('DOMContentLoaded', function() {
+            // 确保第一个主题项被选中
+            const firstThemeItem = document.querySelector('.theme-item[data-theme="default"]');
+            if (firstThemeItem) {
+                firstThemeItem.classList.add('active');
+            }
+            
+            // 设置示例代码并渲染
+            codeEditor.value = exampleCode;
+            renderMermaid(exampleCode);
+        });
     </script>
 </body>
 </html>
